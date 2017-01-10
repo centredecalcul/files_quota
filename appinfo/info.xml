@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<info>
+    <id>filesquota</id>
+    <name>Files Quota</name>
+    <description>My first ownCloud app</description>
+    <licence>AGPL</licence>
+    <author>Benoît Bizet</author>
+    <version>0.0.2</version>
+    <namespace>FilesQuota</namespace>
+	<types>
+		<filesystem/>
+	</types>
+    <category>other</category>
+    <dependencies>
+        <owncloud min-version="9.0" />
+    </dependencies>
+</info>

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<database>
+
+	<name>*dbname*</name>
+	<create>true</create>
+	<overwrite>false</overwrite>
+	<charset>utf8</charset>
+
+	<table>
+		<name>*dbprefix*files_quota</name>
+		<declaration>
+
+			<field>
+				<name>id</name>
+				<type>integer</type>
+				<default>0</default>
+				<notnull>true</notnull>
+				<autoincrement>1</autoincrement>
+				<length>4</length>
+			</field>
+
+			<field>
+				<name>user</name>
+				<type>text</type>
+				<notnull>true</notnull>
+				<length>64</length>
+			</field>
+
+			<field>
+				<name>user_files</name>
+				<type>integer</type>
+				<default></default>
+				<length>8</length>
+			</field>
+
+			<field>
+				<name>user_size</name>
+				<type>integer</type>
+				<default></default>
+				<length>32</length>
+			</field>
+
+			<field>
+				<name>quota_files</name>
+				<type>integer</type>
+				<default>20000</default>
+				<notnull>true</notnull>
+				<length>8</length>
+			</field>
+
+			<field>
+				<name>quota_size</name>
+				<type>integer</type>
+				<default>5368709120</default>
+				<length>32</length>
+			</field>
+
+		</declaration>
+	</table>
+</database>
