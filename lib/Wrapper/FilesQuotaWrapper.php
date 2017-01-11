@@ -2,128 +2,181 @@
 
 namespace OCA\FilesQuota\Wrapper;
 
+use OCP\IDb;
+use OC\Files\Storage\Storage;
+
 use OC\Files\Storage\Wrapper\Wrapper;
-use Sabre\DAV\Exception\InsufficientStorage;
 
 class FilesQuotaWrapper extends Wrapper{
 
-    private $default_size = 5368709120;
+	private $default_size = 5368709120;
 
-    private $default_nb_files = 20000;
-
-	/**
-	 * @var IL10N
-	 */
-	protected $l10n;
+	private $default_nb_files = 20000;
 
 	/**
-	 * @var ILogger;
+	 * @var int $quota
+	 * quota size in GB
 	 */
-	protected $logger;
+	protected	$quota;
 
+	/**
+	 * @var string $sizeRoot
+	 */
+	protected	$sizeRoot;
 
-    /**
-     * @var IDBConnection;
-     */
-	protected $db;
+	/**
+	 * @var int $nbQuotaFiles
+	 * quota number for files
+	 */
+	protected	$nbQuotaFiles;
 
-    /**
-     * @param array $parameters
-     */
+	/**
+	 * @var IDb $db
+	 * for sql request
+	 */
+	protected	$db;
+
+	private		$exist = true;
+
 	public function __construct($parameters) {
-		parent::__construct($parameters);
-		$this->l10n = $parameters['l10n'];
-		$this->logger = $parameters['logger'];
-		$this->db = $parameters['db'];
+		$this->storage = 	$parameters['storage'];
+		$this->quota = 		$parameters['quota'];
+		$this->db =			$parameters['db'];
+		$this->sizeRoot = 	isset($parameters['root']) ? $parameters['root'] : '';
 	}
 
 
 	/**
-	 * Asynchronously read databases to check files quota
+	 * @return int quota value
+	 */
+	public function getQuota() {
+		return $this->quota;
+	}
+
+
+	/**
+	 * @param string $path
+	 * @param \OC\Files\Storage\Storage $storage
+	 */
+	protected function getSize($path, $storage = null) {
+		if (is_null($storage)) {
+			$cache = $this->getCache();
+		} else {
+			$cache = $storage->getCache();
+		}
+		$data = $cache->get($path);
+		if ($data instanceof ICacheEntry and isset($data['size'])) {
+			return $data['size'];
+		} else {
+			return \OCP\Files\FileInfo::SPACE_NOT_COMPUTED;
+		}
+	}
+	/**
+	 * Get free space as limited by the quota
+	 *
+	 * @param string $path
+	 * @return int
+	 */
+	public function free_space($path) {
+		if ($this->quota < 0) {
+			return $this->storage->free_space($path);
+		} else {
+			$used = $this->getSize($this->sizeRoot);
+			if ($used < 0) {
+				return \OCP\Files\FileInfo::SPACE_NOT_COMPUTED;
+			} else {
+				$free = $this->storage->free_space($path);
+				$quotaFree = max($this->quota - $used, 0);
+				// if free space is known
+				if ($free >= 0) {
+					$free = min($free, $quotaFree);
+				} else {
+					$free = $quotaFree;
+				}
+				return $free;
+			}
+		}
+	}
+
+	/**
+	 * see http://php.net/manual/en/function.fopen.php
+	 *
 	 * @param string $path
 	 * @param string $mode
-	 * @return resource | bool
+	 * @return resource
 	 */
-	public function	dbcheck($username, $path)
-	{
-        if (isset($username))
-        {
-            try
-            {
-                $this->logger->warning("TEST JE SUIS DANS DBCHECK APRES LE TRY");
-                $data = null;
-                $arg = null;
-                $path = "home::" . $username . "%";
-                $sql = 'SELECT user_files as `user_files`, user_size  as `user_size`,
-                        quota_files as `quota_files`, quota_size as `quota_size` FROM `*PREFIX*files_quota` ' .
-                        'WHERE `user` like ?';
-                $stmt = $this->db->prepare($sql);
-                $stmt->bindParam(1, $username, \PDO::PARAM_STR);
-                $stmt->execute();
-                $row = $stmt->fetch();
-                $stmt->closeCursor();
-
-                if (!isset($row))
-                {
-                    $this->logger->warning("MA DATABASE EST VIDE");
-
-                    $arg = 'no_user_in_db';
-                    $data = $this->getData($username, $arg);
-                    if ($data['nb_files'] + 1 > $this->default_nb_files)
-                    {
-                        throw new InsufficientStorage('Not enough storage place. You have too much files');
-                    }
-                    if($data['sum_size'] + $this->filesize($path) > $this->default_size)
-                    {
-                        throw new InsufficientStorage(
-                                'Not enough storage place. You have used too much bytes');
-                    }
-                }
-            } catch (\Exception $e)
-            {
-                $message = 	implode(' ', [ __CLASS__, __METHOD__, $e->getMessage()]);
-                $this->logger->warning($message);
-            }
-        }
+	public function fopen($path, $mode) {
+		$source = $this->storage->fopen($path, $mode);
+		$user = $this->storage->getUser()->getUID();
+		//check first if the user exist in our DB
+		if (!is_object($data = $this->db->findUserData($user)));
+		{
+			$this->exist = false;
+			$nb_files = $this->db->getUploadedFilesNumber($user);
+			$used = $this->quota - $this->free_space($path);
+			$data = ['user' => $user, 'nb_files' => $nb_files, 'user_size' => $used,
+				'quota_files' => $this->default_nb_files, 'quota_size' => $this->default_size];
+		}
+		// don't apply quota for part files
+		if (!$this->isPartFile($path)) {
+			$free = $this->free_space('');
+			if ($source && $free >= 0 && $data['quota_files'] - $data['nb_files'] >= 0 && $mode !== 'r' && $mode !== 'rb') {
+				// only apply quota for files, not metadata, trash or others
+				if (strpos(ltrim($path, '/'), 'files/') === 0) {
+					if ($this->exist)
+					{
+						$this->db->updateUserData(['username' => $user,
+							'file_size' => $this->quota - $free]);
+					}
+					else
+					{
+						$this->db->addNewUserQuota(['username' => $user,
+							'nb_files' => $data['nb_files'],
+							'sum_files' => $this->quota - $free]);
+					}
+					return \OC\Files\Stream\Quota::wrap($source, $free);
+				}
+			}
+		}
+		return $source;
 	}
-
-
-    /**
-     * Take usefull datas in file_cache database and fill the application database
-     * @param string $username
-     * @return data | data['nb_files'],['sum_size']
-     */
-	private function get_data($username, $arg)
-    {
-        $path = "home::" . $username . "%";
-        $sql = 'SELECT numeric_id as `storage` FROM `*PREFIX*storages` ' .
-            'WHERE `id` like ?';
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindParam(1, $path, \PDO::PARAM_STR);
-        $stmt->execute();
-        $row = $stmt->fetch();
-        $stmt->closeCursor();
-        $numeric_id = $row['storage'];
-
-        $sql = 'SELECT SUM(size) as `sum_size`, COUNT(storage) as `nb_files` ' .
-            ' FROM `*PREFIX*filecache` WHERE `storage` = ? AND `path` like `files/%`';
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindParam(1, $numeric_id, \PDO::PARAM_INT);
-        $stmt->execute();
-        $row = $stmt->fetch();
-        $stmt->closeCursor();
-        $data = $row;
-
-        if (strcmp('no_user_in_db', $arg)) {
-            $nb_files = $row['nb_files'];
-            $sum_files = $row['sum_size'];
-            $sql = "INSERT INTO `*PREFIX*files_quota` VALUES (`$username`, `$nb_files`, `$sum_files`)";
-            $stmt = $this->db->prepare($sql);
-            if (!$stmt->execute()) {
-                $this->logger("Echec lors de l'exécution : (" . $stmt->errno . ") " . $stmt->error);
-            }
-        }
-        return $data;
-    }
-
+	/**
+	 * Checks whether the given path is a part file
+	 *
+	 * @param string $path Path that may identify a .part file
+	 * @return string File path without .part extension
+	 * @note this is needed for reusing keys
+	 */
+	private function isPartFile($path) {
+		$extension = pathinfo($path, PATHINFO_EXTENSION);
+		return ($extension === 'part');
+	}
+	/**
+	 * @param \OCP\Files\Storage $sourceStorage
+	 * @param string $sourceInternalPath
+	 * @param string $targetInternalPath
+	 * @return bool
+	 */
+	public function copyFromStorage(\OCP\Files\Storage $sourceStorage, $sourceInternalPath, $targetInternalPath) {
+		$free = $this->free_space('');
+		if ($free < 0 or $this->getSize($sourceInternalPath, $sourceStorage) < $free) {
+			return $this->storage->copyFromStorage($sourceStorage, $sourceInternalPath, $targetInternalPath);
+		} else {
+			return false;
+		}
+	}
+	/**
+	 * @param \OCP\Files\Storage $sourceStorage
+	 * @param string $sourceInternalPath
+	 * @param string $targetInternalPath
+	 * @return bool
+	 */
+	public function moveFromStorage(\OCP\Files\Storage $sourceStorage, $sourceInternalPath, $targetInternalPath) {
+		$free = $this->free_space('');
+		if ($free < 0 or $this->getSize($sourceInternalPath, $sourceStorage) < $free) {
+			return $this->storage->moveFromStorage($sourceStorage, $sourceInternalPath, $targetInternalPath);
+		} else {
+			return false;
+		}
+	}
 }
