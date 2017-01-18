@@ -1,10 +1,11 @@
 <?php
 //application.php
-namespace OCA\FilesQuota\AppInfo;
+namespace OCA\Files_Quota\AppInfo;
 
-use OCA\FilesQuota\Wrapper\FilesQuotaWrapper;
-use OC\Files\Storage\Storage;
+use OCA\Files_Quota\Wrapper\FilesQuotaWrapper;
+use \OC\Files\Storage\Home;
 use \OCP\AppFramework\App;
+use \OC\User;
 
 
 
@@ -17,7 +18,7 @@ class Application extends App {
 		 * Controllers
 		 */
 		$container->registerService('FilesQuotaMapper', function($c) {
-			return new RuleMapper(
+			return new \OCA\Files_Quota\Db\FilesQuotaMapper(
 				$c->query('ServerContainer')->getDb()
 			);
 		});
@@ -25,6 +26,14 @@ class Application extends App {
 		/**
 		 * Core
 		 */
+		$container->registerService('Logger', function($c) {
+			return $c->query('ServerContainer')->getLogger();
+		});
+
+		$container->registerService('UserSession', function ($c)
+		{
+			return $c->getServer()->getUserSession();
+		});
 	}
 
 	/**
@@ -34,28 +43,28 @@ class Application extends App {
 		\OC\Files\Filesystem::addStorageWrapper(
 			'oc_fquota',
 			function ($mountPoint, $storage) {
+				$userSession = $this->getContainer()->query('UserSession');
+				$logger = $this->getContainer()->query('Logger');
 				/**
 				 * @var \OC\Files\Storage\Storage $storage
 				 */
-				if ($storage instanceof \OC\Files\Storage\Home ||
-					$storage->instanceOfStorage('\OC\Files\ObjectStore\HomeObjectStoreStorage'))
+				if ($storage->instanceOfStorage('\OC\Files\Storage\Storage'))
 				{
-					if (is_object($storage->getUser()))
-					{
-						$user = $storage->getUser()->getUID();
-						$db = $this->getContainer()->query('ServerContainer')->getDb();
-						$quota = \OC_Util::getUserQuota($user);
-						if ($quota !== \OCP\Files\FileInfo::SPACE_UNLIMITED) {
-							return new FilesQuotaWrapper([
+					$logger->error("IN INSTANCEOFSTORAGE");
+					$user = $userSession->getUser()->getUID();
+					$db = $this->getContainer()->query('FilesQuotaMapper');
+					$quota = \OC_Util::getUserQuota($user);
+					if ($quota !== \OCP\Files\FileInfo::SPACE_UNLIMITED) {
+						return new FilesQuotaWrapper([
 								'storage' => $storage,
 								'db' => $db,
 								'quota' => $quota,
-								'root' => 'files'
+								'root' => 'files',
+								'logger' => $logger
 							]);
 						}
-					}
 				}
 				return $storage;
 			});
 	}
-}
+	}

@@ -6,7 +6,7 @@
  * Time: 14:30
  */
 
-namespace OCA\filesquota\lib\Db;
+namespace OCA\Files_Quota\Db;
 
 use OCP\IDb;
 use OCP\AppFramework\Db\Mapper;
@@ -25,12 +25,14 @@ class FilesQuotaMapper extends Mapper {
 
 	public function findUserData($user)
 	{
-		$sql = 'SELECT user_files as `user_files`, user_size  as `user_size`,
+		$sql = 'SELECT user as `user`, user_files as `nb_files`, user_size  as `user_size`,
 						  	quota_files as `quota_files`, quota_size as `quota_size` FROM `*PREFIX*files_quota` ' .
 			'WHERE `user` like ?';
 		$stmt = $this->db->prepare($sql);
 		$stmt->bindParam(1, $user, \PDO::PARAM_STR);
-		$stmt->execute();
+		if (!$stmt->execute()) {
+			\OCP\Util::writeLog("Files Quota","Echec lors de l'exécution : (" . $stmt->errorCode() . ") " . $stmt->errorInfo(), \OCP\Util::ERROR);
+		}
 		$row = $stmt->fetch();
 		$stmt->closeCursor();
 		return $row;
@@ -41,8 +43,7 @@ class FilesQuotaMapper extends Mapper {
 		$username = $parameters['username'];
 		$nb_files = $parameters['nb_files'];
 		$sum_files = $parameters['sum_files'];
-		$sql = "INSERT INTO `*PREFIX*files_quota` (user, user_files, user_size,
- 				quota_files, quota_size) VALUES ('$username', '$nb_files',
+		$sql = "INSERT INTO `*PREFIX*files_quota` (user, user_files, user_size, quota_files, quota_size) VALUES ('$username', '$nb_files',
  				'$sum_files', '$this->default_nb_files', '$this->default_size')";
 		$stmt = $this->db->prepare($sql);
 		if (!$stmt->execute()) {
@@ -52,10 +53,9 @@ class FilesQuotaMapper extends Mapper {
 
 	public function	updateUserData($parameters)
 	{
-		$file_size = $parameters['$file_size'];
+		$file_size = $parameters['file_size'];
 		$username = $parameters['username'];
-		$sql = "UPDATE `*PREFIX*files_quota` set (user_files = user_files + 1, 
-				user_size = user_size + '$file_size' WHERE user = $username" ;
+		$sql = "UPDATE `*PREFIX*files_quota` set user_files = user_files + 1, user_size = user_size + " . $file_size . " WHERE user like '$username'";
 		$stmt = $this->db->prepare($sql);
 		if (!$stmt->execute()) {
 			\OCP\Util::writeLog("Files Quota","Echec lors de l'exécution : (" . $stmt->errorCode() . ") " . $stmt->errorInfo(), \OCP\Util::ERROR);
