@@ -164,7 +164,8 @@ class FilesQuotaWrapper extends Wrapper{
 		if (!$this->isPartFile($path)) {
 			$this->logger->error("is not a part files");
 			$free = $this->check_free_space('');
-			if ($free >= 0 && $data['quota_files'] - $data['nb_files'] >= 0) {
+			$this->logger->error("TEST DES VALUES !!!");
+			if ($free >= 0 && $data['quota_files'] - $data['nb_files'] > 0) {
 				$this->logger->error("after the big check");
 				// only apply quota for files, not metadata, trash or others
 				if (strpos(ltrim($path, '/'), 'files/') === 0) {
@@ -173,14 +174,14 @@ class FilesQuotaWrapper extends Wrapper{
 					{
 						$this->logger->error("it exist");
 						$this->db->updateUserData(['username' => $user,
-						'file_size' => $this->quota - ($free) + $filesize]);
+						'file_size' => $this->quota - ($free)]);
 					}
 					else
 					{
 						$this->logger->error("don't exist");
 						$this->db->addNewUserQuota(['username' => $user,
 						'nb_files' => $data['nb_files'] + 1,
-						'sum_files' => $this->quota - $free + $filesize]);
+						'sum_files' => $this->quota - $free]);
 					}
 					return $free;
 				}
@@ -225,57 +226,6 @@ class FilesQuotaWrapper extends Wrapper{
 	}
 
 	/**
-	 * see http://php.net/manual/en/function.fopen.php
-	 *
-	 * @param string $path
-	 * @param string $mode
-	 * @return resource
-	 */
-	// public function fopen($path, $mode) {
-	// 	$this->logger->error("IN FOPEN");
-
-	// 	$source = $this->storage->fopen($path, $mode);
-	// 	$user = $this->storage->getUser()->getUID();
-	// 	$this->logger->error("user = " . $user);
-	// 	$this->logger->error("quota =  " . $this->quota);
-	// 	$this->logger->error("path = " . $path);
-	// 	$this->logger->error("source = " . $source);
-	// 	$this->logger->error("mode = " . $mode);
-
-
-	// 	$this->logger->error("before part file check ?");
-	// 	// don't apply quota for part files
-	// 	if (!$this->isPartFile($path)) {
-	// 		$this->logger->error("is not a part files");
-	// 		$free = $this->free_space('');
-	// 		if ($source && $free >= 0 && $data['quota_files'] - $data['nb_files'] >= 0 && $mode !== 'r' && $mode !== 'rb') {
-	// 			$this->logger->error("after the big check");
-
-	// 			// only apply quota for files, not metadata, trash or others
-	// 			if (strpos(ltrim($path, '/'), 'files/') === 0) {
-	// 				$this->logger->error("je suis la dedans ?");
-	// 				if ($this->exist == true)
-	// 				{
-	// 					$this->logger->error("it exist");
-	// 					$this->db->updateUserData(['username' => $user,
-	// 						'file_size' => $this->quota - $free]);
-	// 				}
-	// 				else
-	// 				{
-	// 					$this->logger->error("don't exist");
-	// 					$this->db->addNewUserQuota(['username' => $user,
-	// 						'nb_files' => $data['nb_files'],
-	// 						'sum_files' => $this->quota - $free]);
-	// 				}
-	// 				return \OC\Files\Stream\Quota::wrap($source, $free);
-	// 			}
-	// 		}
-	// 	}
-	// 	$this->logger->error("END\n________________________________________________________________________");
-
-	// 	return $source;
-	// }
-	/**
 	 * Checks whether the given path is a part file
 	 *
 	 * @param string $path Path that may identify a .part file
@@ -302,6 +252,61 @@ class FilesQuotaWrapper extends Wrapper{
 			return false;
 		}
 	}
+
+	public function unlink($path) {
+		$this->logger->error("IN UNLINK PLSSSS");
+		$this->logger->error("PATH = " . $path);
+
+
+		if ($this->quota < 0) {
+			$this->logger->error("quota < 0");
+			return $this->storage->free_space($path);
+		} 
+		else 
+		{
+			$used = $this->getSize($this->sizeRoot);
+			if ($used < 0) {
+				$this->logger->error("used < 0");
+				return \OCP\Files\FileInfo::SPACE_NOT_COMPUTED;
+			} else {
+				$free = $this->storage->free_space($path);
+				$quotaFree = max($this->quota - $used, 0);
+				// if free space is known
+				if ($free >= 0) {
+					$this->logger->error("free >= 0");
+					$free = min($free, $quotaFree);
+				} else {
+					$this->logger->error("free < 0");
+					$free = $quotaFree;
+				}
+			}
+		}
+
+		$user = $this->storage->getUser()->getUID();
+		$data = $this->db->findUserData($user);
+		$this->logger->error("before isset");
+		if (!isset($data['user']))
+		{
+			$this->logger->error("don't find in db");
+			$this->exist = false;
+			$nb_files = $this->db->getUploadedFilesNumber($user);
+			$this->logger->error('nb files = ' . $nb_files);
+			$used = $this->quota - $free;
+			$data = ['user' => $user, 'nb_files' => $nb_files, 'user_size' => $used,
+				'quota_files' => $this->default_nb_files, 'quota_size' => $this->default_size];
+		}
+		if ($this->exist)
+		{
+			$this->db->suppressFile($user);
+		}
+		else
+		{
+			$this->db->addNewUserQuota(['username' => $user,
+						'nb_files' => $data['nb_files'],
+						'sum_files' => $this->quota - $free]);
+		}
+	}
+
 	/**
 	 * @param \OCP\Files\Storage $sourceStorage
 	 * @param string $sourceInternalPath

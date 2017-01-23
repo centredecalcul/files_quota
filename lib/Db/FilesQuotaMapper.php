@@ -55,7 +55,7 @@ class FilesQuotaMapper extends Mapper {
 	{
 		$file_size = $parameters['file_size'];
 		$username = $parameters['username'];
-		$sql = "UPDATE `*PREFIX*files_quota` set user_files = user_files + 1, user_size = user_size + " . $file_size . " WHERE user like '$username'";
+		$sql = "UPDATE `*PREFIX*files_quota` set user_files = user_files + 1, user_size = user_size WHERE user like '$username'";
 		$stmt = $this->db->prepare($sql);
 		if (!$stmt->execute()) {
 			\OCP\Util::writeLog("Files Quota","Echec lors de l'exécution : (" . $stmt->errorCode() . ") " . $stmt->errorInfo(), \OCP\Util::ERROR);
@@ -84,4 +84,12 @@ class FilesQuotaMapper extends Mapper {
 	}
 
 
+	public function suppressFile($username)
+	{
+		$sql = "UPDATE `*PREFIX*files_quota` set user_files = user_files - 1 WHERE user like '$username'";
+		$stmt = $this->db->prepare($sql);
+		if (!$stmt->execute()) {
+			\OCP\Util::writeLog("Files Quota","Echec lors de l'exécution : (" . $stmt->errorCode() . ") " . $stmt->errorInfo(), \OCP\Util::ERROR);
+		}
+	}
 }
