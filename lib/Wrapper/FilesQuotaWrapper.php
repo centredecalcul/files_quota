@@ -98,7 +98,7 @@ class FilesQuotaWrapper extends Wrapper{
 			} else {
 				$free = $this->storage->free_space($path);
 				$quotaFree = max($this->quota - $used, 0);
-				$this->logger("USED = " . $used);
+				$this->logger->error("USED = " . $used);
 				// if free space is known
 				if ($free >= 0) {
 					$this->logger->error("free >= 0");
@@ -148,17 +148,13 @@ class FilesQuotaWrapper extends Wrapper{
 		$user = $this->storage->getUser()->getUID();
 		//check first if the user exist in our DB
 		$path2 = Filesystem::normalizePath($this->storage->getLocalFile($path), true, true);
-		$filesize = $this->getSize($path2);
-		$this->logger->error("FILESIZE ============== " . $filesize['size']);
 		$data = $this->db->findUserData($user);
 		if (!isset($data['user']))
 		{
 			$this->logger->error("don't find in db");
 			$this->exist = false;
 			$nb_files = $this->db->getUploadedFilesNumber($user);
-			$used = $this->quota - $free;
-			$data = ['user' => $user, 'nb_files' => $nb_files, 'user_size' => $used,
-				'quota_files' => $this->default_nb_files, 'quota_size' => $this->default_size];
+			$data = ['user' => $user, 'nb_files' => $nb_files, 'quota_files' => $this->default_nb_files];
 		}
 		$this->logger->error("SIZEROOT = " . $this->sizeRoot);
 		if (!$this->isPartFile($path)) {
@@ -187,6 +183,7 @@ class FilesQuotaWrapper extends Wrapper{
 				}
 			}
 		}
+		$this->logger->error("BEFORE SPACE NOT COMPUTED");
 		return \OCP\Files\FileInfo::SPACE_NOT_COMPUTED;
 	}
 

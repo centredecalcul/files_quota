@@ -25,9 +25,8 @@ class FilesQuotaMapper extends Mapper {
 
 	public function findUserData($user)
 	{
-		$sql = 'SELECT user as `user`, user_files as `nb_files`, user_size  as `user_size`,
-						  	quota_files as `quota_files`, quota_size as `quota_size` FROM `*PREFIX*files_quota` ' .
-			'WHERE `user` like ?';
+		$sql = 'SELECT user as `user`, user_files as `nb_files`, quota_files as `quota_files` FROM `*PREFIX*files_quota` ' .
+				'WHERE `user` like ?';
 		$stmt = $this->db->prepare($sql);
 		$stmt->bindParam(1, $user, \PDO::PARAM_STR);
 		if (!$stmt->execute()) {
@@ -42,9 +41,7 @@ class FilesQuotaMapper extends Mapper {
 	{
 		$username = $parameters['username'];
 		$nb_files = $parameters['nb_files'];
-		$sum_files = $parameters['sum_files'];
-		$sql = "INSERT INTO `*PREFIX*files_quota` (user, user_files, user_size, quota_files, quota_size) VALUES ('$username', '$nb_files',
- 				'$sum_files', '$this->default_nb_files', '$this->default_size')";
+		$sql = "INSERT INTO `*PREFIX*files_quota` (user, user_files, quota_files) VALUES ('$username', '$nb_files', '$this->default_nb_files')";
 		$stmt = $this->db->prepare($sql);
 		if (!$stmt->execute()) {
 			\OCP\Util::writeLog("Files Quota","Echec lors de l'exécution : (" . $stmt->errorCode() . ") " . $stmt->errorInfo(), \OCP\Util::ERROR);
@@ -53,9 +50,8 @@ class FilesQuotaMapper extends Mapper {
 
 	public function	updateUserData($parameters)
 	{
-		$file_size = $parameters['file_size'];
 		$username = $parameters['username'];
-		$sql = "UPDATE `*PREFIX*files_quota` set user_files = user_files + 1, user_size = user_size WHERE user like '$username'";
+		$sql = "UPDATE `*PREFIX*files_quota` set user_files = (CASE WHEN user_files < 0 THEN 1 ELSE user_files + 1 END) WHERE user like '$username'";
 		$stmt = $this->db->prepare($sql);
 		if (!$stmt->execute()) {
 			\OCP\Util::writeLog("Files Quota","Echec lors de l'exécution : (" . $stmt->errorCode() . ") " . $stmt->errorInfo(), \OCP\Util::ERROR);
@@ -86,7 +82,9 @@ class FilesQuotaMapper extends Mapper {
 
 	public function suppressFile($username)
 	{
-		$sql = "UPDATE `*PREFIX*files_quota` set user_files = user_files - 1 WHERE user like '$username'";
+		$up_user_files = $user_files - 1;
+
+		$sql = "UPDATE `*PREFIX*files_quota` set user_files = (CASE WHEN user_files <= 0 THEN 0 ELSE user_files - 1 END) WHERE user like '$username'";
 		$stmt = $this->db->prepare($sql);
 		if (!$stmt->execute()) {
 			\OCP\Util::writeLog("Files Quota","Echec lors de l'exécution : (" . $stmt->errorCode() . ") " . $stmt->errorInfo(), \OCP\Util::ERROR);

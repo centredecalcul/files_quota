@@ -3,13 +3,13 @@
 namespace OCA\Files_Quota\AppInfo;
 
 use OCA\Files_Quota\Wrapper\FilesQuotaWrapper;
+use OCA\Files_Quota\Controller\SettingsController;
 use \OC\Files\Storage\Home;
-use \OCP\AppFramework\App;
+use OCP\App;
 use \OC\User;
 
 
-
-class Application extends App {
+class Application extends \OCP\AppFramework\App {
 
 	public function __construct(array $urlParams=array()){
 		parent::__construct('filesquota', $urlParams);
@@ -26,15 +26,23 @@ class Application extends App {
 		/**
 		 * Core
 		 */
-		$container->registerService('Logger', function($c) {
-			return $c->query('ServerContainer')->getLogger();
-		});
-
 		$container->registerService('UserSession', function ($c)
 		{
 			return $c->getServer()->getUserSession();
 		});
+		$container->registerService('Logger', function($c) {
+			return $c->query('ServerContainer')->getLogger();
+		});
+        $container->registerService('L10N', function($c) {
+            return $c->query('ServerContainer')->getL10N($c->query('AppName'));
+        });
+
 	}
+
+    public function registerSettings() {
+        // Register settings scripts
+        App::registerAdmin('files_quota', 'settings/settings-admin');
+    }
 
 	/**
 	 * Add wrapper for local storages
