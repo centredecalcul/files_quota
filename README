@@ -1,0 +1,26 @@
+**README**
+
+Resume:
+Files Quota is an application used for manage the number of files an user can upload on the server with a quota system like the
+size system in GB.
+
+How to install the application:
+
+  -Go on https://github.com/centredecalcul/files_quota.
+  -Go on your Owncloud/apps folder.
+  -You can download it in zip or use "git clone https://github.com/centredecalcul/files_quota.git
+  -If you have downloaded the zip you have to extract it inside your Owncloud/apps folder.
+  -After that you have to use the web client for activing the application.
+  
+  Features dones:
+  -Create a database able to stock directly the number of files and avoid to calculate each times in the Owncloud database.
+  -Cancel the upload when the quota is exceeded
+  -Update the database when the user upload a file
+  -Update the database when the use supress a file
+  -Show a error message to the user when the upload is canceled
+  
+  To Do:
+  -Add an administration page for defining a default quota and apply specific quota for specific user.
+  -Change the message show to the user by a more appropriate message
+  -Add some line command in the server side to make management easier.
+  -Integrate directly the quota management with octet inside our application.
