@@ -9,6 +9,7 @@
 namespace OCA\Files_Quota\Db;
 
 use OCP\IDb;
+use OCP\ILogger;
 use OCP\AppFramework\Db\Mapper;
 
 
@@ -19,8 +20,11 @@ class FilesQuotaMapper extends Mapper {
 
 	private $default_nb_files = 20000;
 
-	public function __construct(IDb $db) {
-		parent::__construct($db, 'files_quota', '\OCA\FilesQuota\lib\Db\Request');
+	private $log;
+
+	public function __construct(IDb $db, ILogger $log) {
+		parent::__construct($db,'files_quota', '\OCA\FilesQuota\lib\Db\Request');
+		$this->log = $log;
 	}
 
 	public function findUserData($user)

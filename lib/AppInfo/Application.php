@@ -25,13 +25,15 @@ class Application extends \OCP\AppFramework\App {
                 $server->getRequest(),
                 $server->getL10N($c->getAppName()),
                 $server->getConfig(),
-                $c->query('FilesQuotaMapper')
+                $c->query('FilesQuotaMapper'),
+                $c->query('Logger')
                 );
 		});
 
 		$container->registerService('FilesQuotaMapper', function($c) {
 			return new \OCA\Files_Quota\Db\FilesQuotaMapper(
-				$c->query('ServerContainer')->getDb()
+				$c->query('ServerContainer')->getDb(),
+				$c->query('Logger')
 			);
 		});
 
@@ -53,7 +55,7 @@ class Application extends \OCP\AppFramework\App {
 
     public function registerSettings() {
         // Register settings scripts
-        App::registerAdmin('files_quota', 'settings/settings-admin');
+        \OCP\App::registerAdmin('files_quota', 'settings/settings-admin');
     }
 
 	/**

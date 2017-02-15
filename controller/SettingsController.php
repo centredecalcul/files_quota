@@ -7,6 +7,7 @@ use	OCP\IL10N;
 use	OCP\IRequest;
 use	OCP\IConfig;
 use OCA\Files_Quota\Db\FilesQuotaMapper;
+use OCP\ILogger;
 
 class	SettingsController extends Controller {
 	/** @var IL10N */
@@ -23,12 +24,15 @@ class	SettingsController extends Controller {
 	/* our mapper to access db */
 	private $db;
 
+	private $log;
+
 	public function __construct($appName, IRequest $request, IL10N $l10n,
-                IConfig $config, FilesQuotaMapper $db) {
+                IConfig $config, FilesQuotaMapper $db, ILogger $log) {
 		parent::__construct($appName, $request);
 		$this->l10n = $l10n;
         $this->config = $config;
         $this->db = $db;
+        $this->log = $log;
 	}
 
 	/**
@@ -38,8 +42,12 @@ class	SettingsController extends Controller {
 		$params = [
 			'userList' => $this->db->getUserList(),
 		];
-
-		return new TemplateResponse($this->appName, 'settings-admin', $params, "blank");  // templates/settings-admin.php
+		$this->log->error('AVANT FOREACH');
+		foreach ($params['userList'] as $row)
+		{
+			$this->log->error("NOM : " . $row['uid']);
+		}
+		return new TemplateResponse($this->appName, 'settings-admin', $params);  // templates/settings-admin.php
 	}
 
 	/**
@@ -60,7 +68,7 @@ class	SettingsController extends Controller {
 	 */
 	public function getValue($key) {
 		return $this->config->getAppValue("files_quota", $key);
-	}	
+	}
 
 
 }
