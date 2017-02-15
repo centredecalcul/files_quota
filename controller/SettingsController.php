@@ -6,6 +6,7 @@ use OCP\AppFramework\Controller;
 use	OCP\IL10N;
 use	OCP\IRequest;
 use	OCP\IConfig;
+use OCA\Files_Quota\Db\FilesQuotaMapper;
 
 class	SettingsController extends Controller {
 	/** @var IL10N */
@@ -17,12 +18,29 @@ class	SettingsController extends Controller {
 	 * @param IRequest $request
 	 * @param IL10N $l10n
 	 */
+	
+
+	/* our mapper to access db */
+	private $db;
+
 	public function __construct($appName, IRequest $request, IL10N $l10n,
-                IConfig $config) {
+                IConfig $config, FilesQuotaMapper $db) {
 		parent::__construct($appName, $request);
 		$this->l10n = $l10n;
-                $this->config = $config;
-	}	
+        $this->config = $config;
+        $this->db = $db;
+	}
+
+	/**
+	 * Admin page
+	 */
+	public function index() {
+		$params = [
+			'userList' => $this->db->getUserList(),
+		];
+
+		return new TemplateResponse($this->appName, 'settings-admin', $params, "blank");  // templates/settings-admin.php
+	}
 
 	/**
 	 * Set a configuration value in the twofactor_privacyidea app config.

@@ -30,7 +30,7 @@ class FilesQuotaMapper extends Mapper {
 		$stmt = $this->db->prepare($sql);
 		$stmt->bindParam(1, $user, \PDO::PARAM_STR);
 		if (!$stmt->execute()) {
-			\OCP\Util::writeLog("Files Quota","Echec lors de l'exécution : (" . $stmt->errorCode() . ") " . $stmt->errorInfo(), \OCP\Util::ERROR);
+			\OCP\Util::writeLog("Files Quota","Fail during the execution : (" . $stmt->errorCode() . ") " . $stmt->errorInfo(), \OCP\Util::ERROR);
 		}
 		$row = $stmt->fetch();
 		$stmt->closeCursor();
@@ -44,7 +44,7 @@ class FilesQuotaMapper extends Mapper {
 		$sql = "INSERT INTO `*PREFIX*files_quota` (user, user_files, quota_files) VALUES ('$username', '$nb_files', '$this->default_nb_files')";
 		$stmt = $this->db->prepare($sql);
 		if (!$stmt->execute()) {
-			\OCP\Util::writeLog("Files Quota","Echec lors de l'exécution : (" . $stmt->errorCode() . ") " . $stmt->errorInfo(), \OCP\Util::ERROR);
+			\OCP\Util::writeLog("Files Quota","Fail during the execution : (" . $stmt->errorCode() . ") " . $stmt->errorInfo(), \OCP\Util::ERROR);
 		}
 	}
 
@@ -54,7 +54,7 @@ class FilesQuotaMapper extends Mapper {
 		$sql = "UPDATE `*PREFIX*files_quota` set user_files = (CASE WHEN user_files < 0 THEN 1 ELSE user_files + 1 END) WHERE user like '$username'";
 		$stmt = $this->db->prepare($sql);
 		if (!$stmt->execute()) {
-			\OCP\Util::writeLog("Files Quota","Echec lors de l'exécution : (" . $stmt->errorCode() . ") " . $stmt->errorInfo(), \OCP\Util::ERROR);
+			\OCP\Util::writeLog("Files Quota","Fail during the execution : (" . $stmt->errorCode() . ") " . $stmt->errorInfo(), \OCP\Util::ERROR);
 		}
 	}
 
@@ -82,12 +82,29 @@ class FilesQuotaMapper extends Mapper {
 
 	public function suppressFile($username)
 	{
-		$up_user_files = $user_files - 1;
-
 		$sql = "UPDATE `*PREFIX*files_quota` set user_files = (CASE WHEN user_files <= 0 THEN 0 ELSE user_files - 1 END) WHERE user like '$username'";
 		$stmt = $this->db->prepare($sql);
 		if (!$stmt->execute()) {
-			\OCP\Util::writeLog("Files Quota","Echec lors de l'exécution : (" . $stmt->errorCode() . ") " . $stmt->errorInfo(), \OCP\Util::ERROR);
+			\OCP\Util::writeLog("Files Quota","Fail during the execution : (" . $stmt->errorCode() . ") " . $stmt->errorInfo(), \OCP\Util::ERROR);
+		}
+	}
+
+	public function getListUser()
+	{
+		$sql = "SELECT DISTINCT uid FROM `*PREFIX*users`";
+		$stmt = $this->db->prepare($sql);
+		if (!$stmt->execute()) {
+			\OCP\Util::writeLog("Files Quota","Fail during the execution : (" . $stmt->errorCode() . ") " . $stmt->errorInfo(), \OCP\Util::ERROR);
+			return null;
+		}
+		else
+		{
+			while($row = $stmt->fetch_array())
+			{
+				$rows[] = $row;
+			}
+			$stmt->closeCursor();
+			return $row;
 		}
 	}
 }

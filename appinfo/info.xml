@@ -5,6 +5,7 @@
     <description>An application who add a file number quota per user</description>
     <licence>AGPL</licence>
     <author>Benoît Bizet</author>
+    <admin>admin</admin>
     <version>0.0.2</version>
     <namespace>Files_Quota</namespace>
 	<types>

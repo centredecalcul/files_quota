@@ -17,6 +17,18 @@ class Application extends \OCP\AppFramework\App {
 		/**
 		 * Controllers
 		 */
+		
+		$container->registerService('SettingsController', function($c) {
+			$server = $c->getServer();
+			return new \OCA\FilesQuota\Controller\SettingsController(
+                $c->getAppName(),
+                $server->getRequest(),
+                $server->getL10N($c->getAppName()),
+                $server->getConfig(),
+                $c->query('FilesQuotaMapper')
+                );
+		});
+
 		$container->registerService('FilesQuotaMapper', function($c) {
 			return new \OCA\Files_Quota\Db\FilesQuotaMapper(
 				$c->query('ServerContainer')->getDb()
@@ -58,7 +70,6 @@ class Application extends \OCP\AppFramework\App {
 				 */
 				if ($storage->instanceOfStorage('\OC\Files\Storage\Storage'))
 				{
-					$logger->error("IN INSTANCEOFSTORAGE");
 					$user = $userSession->getUser()->getUID();
 					$db = $this->getContainer()->query('FilesQuotaMapper');
 					$quota = \OC_Util::getUserQuota($user);
@@ -74,5 +85,5 @@ class Application extends \OCP\AppFramework\App {
 				}
 				return $storage;
 			});
-	}
+		}
 	}
