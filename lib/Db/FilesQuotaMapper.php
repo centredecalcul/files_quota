@@ -93,7 +93,7 @@ class FilesQuotaMapper extends Mapper {
 		}
 	}
 
-	public function getListUser()
+	public function getUserList()
 	{
 		$sql = "SELECT DISTINCT uid FROM `*PREFIX*users`";
 		$stmt = $this->db->prepare($sql);
@@ -103,9 +103,8 @@ class FilesQuotaMapper extends Mapper {
 		}
 		else
 		{
-			while($row = $stmt->fetch_array())
-			{
-				$rows[] = $row;
+			foreach ($stmt->fetchAll() as $line) {
+    			$row[] = $line;
 			}
 			$stmt->closeCursor();
 			return $row;

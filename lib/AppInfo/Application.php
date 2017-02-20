@@ -12,22 +12,22 @@ use \OC\User;
 class Application extends \OCP\AppFramework\App {
 
 	public function __construct(array $urlParams=array()){
-		parent::__construct('filesquota', $urlParams);
+		parent::__construct('files_quota', $urlParams);
 		$container = $this->getContainer();
+
 		/**
 		 * Controllers
 		 */
-		
 		$container->registerService('SettingsController', function($c) {
-			$server = $c->getServer();
-			return new \OCA\FilesQuota\Controller\SettingsController(
-                $c->getAppName(),
-                $server->getRequest(),
-                $server->getL10N($c->getAppName()),
-                $server->getConfig(),
-                $c->query('FilesQuotaMapper'),
-                $c->query('Logger')
-                );
+		$server = $c->getServer();
+		return new \OCA\FilesQuota\Controller\SettingsController(
+            $c->getAppName(),
+            $server->getRequest(),
+            $server->getL10N($c->getAppName()),
+            $server->getConfig(),
+            $c->query('FilesQuotaMapper'),
+            $c->query('Logger')
+            );
 		});
 
 		$container->registerService('FilesQuotaMapper', function($c) {
@@ -50,7 +50,6 @@ class Application extends \OCP\AppFramework\App {
         $container->registerService('L10N', function($c) {
             return $c->query('ServerContainer')->getL10N($c->query('AppName'));
         });
-
 	}
 
     public function registerSettings() {
