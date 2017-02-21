@@ -1,3 +1,7 @@
+<?php
+	OCP\Util::addScript('files_quota', 'script');
+?>
+
 <form id="files_quota" class="section files_quota">
 	<h2><?php p($l->t('Files Quota')); ?></h2>
 	<p>
@@ -7,7 +11,9 @@
 	<div id="defaultfilesquota">
 	<p>
 		<label for="defaultfilesnumber">Default quota as number of files</label>
-		<input type="number" id="defaultfilesnumber" width="40px" value="20000" />
+		<input type="number" id="defaultfilesnumber" name="defaultquota" width="40px" value="<?php p($_['defaultNbFiles']); ?>"/>
+		<input type="button" name="submitNewDefaultQuota" id="submitNewDefaultQuota"
+				   value="<?php p($l->t( 'Save' )); ?>"/>
 	</p>
 	<p>Edit specific user quota</p>
 	</div>

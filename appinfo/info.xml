@@ -8,6 +8,7 @@
     <admin>admin</admin>
     <version>0.0.2</version>
     <namespace>Files_Quota</namespace>
+    <default_enable/>
 	<types>
 		<filesystem/>
 	</types>
