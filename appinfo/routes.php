@@ -7,7 +7,8 @@ $application = new Application();
 
 $application->registerRoutes($this, [
 	'routes' => [
-	['name' => 'settings/settings-admin#set_default_quota', 'url' => '/default-quota', 'verb' => 'POST'],
+	['name' => 'settings#setDefaultQuota', 'url' => '/setDefaultQuota', 'verb' => 'POST'],
+	['name' => 'settings#setUserQuota', 'url' => '/setUserQuota', 'verb' => 'POST'],
 	]
 
 ]);

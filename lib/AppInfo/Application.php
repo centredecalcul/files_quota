@@ -20,7 +20,7 @@ class Application extends \OCP\AppFramework\App {
 		 */
 		$container->registerService('SettingsController', function($c) {
 		$server = $c->getServer();
-		return new \OCA\FilesQuota\Controller\SettingsController(
+		return new \OCA\Files_Quota\Controller\SettingsController(
             $c->getAppName(),
             $server->getRequest(),
             $server->getL10N($c->getAppName()),

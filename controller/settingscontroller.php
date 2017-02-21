@@ -57,7 +57,7 @@ class	SettingsController extends Controller {
 		}
 		$this->log->error($this->appName);
 		$this->log->error($this->getValue("quotaDefault"));
-		return new TemplateResponse($this->appName, 'settings-admin', $params, '');  // templates/settings-admin.php
+		return new TemplateResponse($this->appName, 'settings-admin', $params, 'blank');  // templates/settings-admin.php
 	}
 
 	/**
@@ -91,8 +91,20 @@ class	SettingsController extends Controller {
 
 	public function setDefaultQuota($quota)
 	{
-		$quota = (int) $quota;
-		$this->log->error("INSIDE setDefaultQuota => VALUE QUOTA = " . $quota);
+		$this->log->error("INSIDE setDefaultQuota => VALUE QUOTA = " . (int) $quota);
+
+		$val = (int) $quota;
+
+		$this->log->error("INSIDE setDefaultQuota => VALUE QUOTA = " . $val);
 		$this->setValue("quotaDefault", $quota);
+
+		return new DataResponse(['error' => 0]);
+	}
+
+	public function setUserQuota($quota, $username)
+	{
+		$return = $this->db->setUserQuota($quota, $username);
+
+		return new DataResponse(['error' => $return]);
 	}
 }

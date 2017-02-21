@@ -110,4 +110,15 @@ class FilesQuotaMapper extends Mapper {
 			return $row;
 		}
 	}
+
+	public function setUserQuota($quota, $username)
+	{
+		$sql = "UPDATE `*PREFIX*files_quota` set quota_files = '$quota' WHERE user like '$username'";
+		$stmt = $this->db->prepare($sql);
+		if (!$stmt->execute()) {
+			\OCP\Util::writeLog("Files Quota","Fail during the execution : (" . $stmt->errorCode() . ") " . $stmt->errorInfo(), \OCP\Util::ERROR);
+			return 1;
+		}
+		return 0;
+	}
 }
