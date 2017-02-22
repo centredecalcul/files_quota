@@ -3,6 +3,10 @@ console.log("files_quota");
 (function ($, OC) {
 
 	$(document).ready(function () {
+
+		$('.chosen-select').chosen({
+    	search_contains: true
+		}); 
 		$('#submitNewDefaultQuota').click(function () {
 			console.log("JE SUIS ICI OUHOUUUUUU");
 			if ($('#defaultfilesnumber').val() == "")
