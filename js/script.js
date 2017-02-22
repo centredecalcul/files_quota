@@ -70,7 +70,7 @@ console.log("files_quota");
 							{
 								OCdialogs.info( response.message, t('Default Quota', 'New user files quota set'), null, true );
 								$('#filesquota-user-block').hide();
-							}
+								}
 							else
 							{
 								OCdialogs.info( response.message, t('Default Quota', 'The files quota failed to update'), null, true );
