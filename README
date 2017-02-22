@@ -17,9 +17,10 @@ How to install the application:
   -Update the database when the user upload a file
   -Update the database when the use supress a file
   -Show a error message to the user when the upload is canceled
+  -Add an administration page for defining a default quota and apply specific quota for specific user.
   
   To Do:
-  -Add an administration page for defining a default quota and apply specific quota for specific user.
+
   -Change the message show to the user by a more appropriate message
   -Add some line command in the server side to make management easier.
   -Integrate directly the quota management with octet inside our application.
