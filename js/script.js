@@ -8,7 +8,6 @@ console.log("files_quota");
     	search_contains: true
 		}); 
 		$('#submitNewDefaultQuota').click(function () {
-			console.log("JE SUIS ICI OUHOUUUUUU");
 			if ($('#defaultfilesnumber').val() == "")
 			{
 				return;
@@ -20,8 +19,6 @@ console.log("files_quota");
 				{
 					if ( confirmed )
 					{
-						console.log("CONFIRME");
-						console.log($('#defaultfilesnumber').val());
 						var url = OC.generateUrl('/apps/files_quota/setDefaultQuota');
 						var data = {
 							quota: $('#defaultfilesnumber').val()
@@ -37,9 +34,7 @@ console.log("files_quota");
 		});
 
 		$('#filesquota-user-select').change( function() {
-			console.log($(this).val());
 			var username = $(this).val();
-			console.log("USERNAME = " + username);
 			if ( username == "")
 			{
 				return;
@@ -60,16 +55,12 @@ console.log("files_quota");
 				{
 					if ( confirmed )
 					{
-						console.log("CONFIRME 2");
-						console.log($('#userquotafiles').val());
-						console.log($('#filesquota-user-select').val());
 						var url = OC.generateUrl('/apps/files_quota/setUserQuota');
 						var data = {
 							quota: $('#userquotafiles').val(),
 							username: $('#filesquota-user-select').val()
 						};
 						$.post(url, data).success(function (response) {
-							console.log(response);
 							if (response.error == 0)
 							{
 								OCdialogs.info( response.message, t('Default Quota', 'New user files quota set'), null, true );

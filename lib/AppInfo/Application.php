@@ -33,6 +33,7 @@ class Application extends \OCP\AppFramework\App {
 		$container->registerService('FilesQuotaMapper', function($c) {
 			return new \OCA\Files_Quota\Db\FilesQuotaMapper(
 				$c->query('ServerContainer')->getDb(),
+				$server->getConfig(),
 				$c->query('Logger')
 			);
 		});

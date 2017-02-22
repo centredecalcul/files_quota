@@ -50,13 +50,6 @@ class	SettingsController extends Controller {
 			'userList' => $this->db->getUserList(),
 			'defaultNbFiles' => $this->getValue("quotaDefault"),
 		];
-		$this->log->error('AVANT FOREACH');
-		foreach ($params['userList'] as $row)
-		{
-			$this->log->error("NOM : " . $row['uid']);
-		}
-		$this->log->error($this->appName);
-		$this->log->error($this->getValue("quotaDefault"));
 		return new TemplateResponse($this->appName, 'settings-admin', $params, 'blank');  // templates/settings-admin.php
 	}
 
@@ -78,33 +71,24 @@ class	SettingsController extends Controller {
 	 */
 	public function getValue($key) {
 		$value = $this->config->getAppValue("files_quota", $key);
-		$this->log->error("VALUE = " . $value);
 		if ($value === "")
 		{
-			$this->log->error("JE SUIS LA DEDANS ?");
 			$this->setValue("quotaDefault", $this->default_nb_files);
 			return $this->default_nb_files;
 		}
-		$this->log->error("OU JE SUIS ICI ?");
 		return $value;
 	}
 
 	public function setDefaultQuota($quota)
 	{
-		$this->log->error("INSIDE setDefaultQuota => VALUE QUOTA = " . (int) $quota);
-
 		$val = (int) $quota;
-
-		$this->log->error("INSIDE setDefaultQuota => VALUE QUOTA = " . $val);
 		$this->setValue("quotaDefault", $quota);
-
 		return new DataResponse(['error' => 0]);
 	}
 
 	public function setUserQuota($quota, $username)
 	{
 		$return = $this->db->setUserQuota($quota, $username);
-
 		return new DataResponse(['error' => $return]);
 	}
 }
