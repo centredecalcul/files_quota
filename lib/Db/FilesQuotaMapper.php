@@ -18,7 +18,9 @@ use	OCP\IConfig;
 
 class FilesQuotaMapper extends Mapper {
 
-	private $default_nb_files = 20000;
+	public $DEFAULT_QUOTA_FILES = -2;
+
+	public $UNLIMITED_QUOTA_FILES = -1;
 
 	private $log;
 
@@ -28,9 +30,11 @@ class FilesQuotaMapper extends Mapper {
 		parent::__construct($db,'files_quota', '\OCA\FilesQuota\lib\Db\Request');
 		$this->log = $log;
 		$this->conf = $config;
-		$this->default_nb_files = $this->conf->getAppValue("files_quota", "quotaDefault");
-
-
+		$value = $this->conf->getAppValue("files_quota", "quotaDefault");
+		if ($value === "")
+		{
+			$this->conf->setAppValue("files_quota", "quotaDefault", 20000);
+		}
 	}
 
 	public function findUserData($user)
@@ -51,7 +55,8 @@ class FilesQuotaMapper extends Mapper {
 	{
 		$username = $parameters['username'];
 		$nb_files = $parameters['nb_files'];
-		$sql = "INSERT INTO `*PREFIX*files_quota` (user, user_files, quota_files) VALUES ('$username', '$nb_files', '$this->default_nb_files')";
+		//-2 is the default quota
+		$sql = "INSERT INTO `*PREFIX*files_quota` (user, user_files, quota_files) VALUES ('$username', '$nb_files', '$this->DEFAULT_QUOTA_FILES')";
 		$stmt = $this->db->prepare($sql);
 		if (!$stmt->execute()) {
 			\OCP\Util::writeLog("Files Quota","Fail during the execution : (" . $stmt->errorCode() . ") " . $stmt->errorInfo(), \OCP\Util::ERROR);
@@ -101,7 +106,7 @@ class FilesQuotaMapper extends Mapper {
 
 	public function getUserList()
 	{
-		$sql = "SELECT DISTINCT uid FROM `*PREFIX*users`";
+		$sql = "SELECT DISTINCT uid, quota_files FROM `*PREFIX*users` left join `*PREFIX*files_quota` on `uid` = `user`";
 		$stmt = $this->db->prepare($sql);
 		if (!$stmt->execute()) {
 			\OCP\Util::writeLog("Files Quota","Fail during the execution : (" . $stmt->errorCode() . ") " . $stmt->errorInfo(), \OCP\Util::ERROR);
@@ -124,6 +129,72 @@ class FilesQuotaMapper extends Mapper {
 		if (!$stmt->execute()) {
 			\OCP\Util::writeLog("Files Quota","Fail during the execution : (" . $stmt->errorCode() . ") " . $stmt->errorInfo(), \OCP\Util::ERROR);
 			return 1;
+		}
+		return 0;
+	}
+
+	public function getDefaultQuota()
+	{
+		$return = $this->conf->getAppValue("files_quota", "defaultQuota");
+	
+		if ($return === "")
+		{
+			$this->conf->setAppValue("files_quota", "defaultQuota", 20000);
+			return 20000;
+		}
+		return $this->conf->getAppValue("files_quota", "defaultQuota");
+	}
+
+	public function getAllUsersFiles()
+	{
+		$sql = "SELECT DISTINCT storage, COUNT(storage) as `nb_files`, id FROM `*PREFIX*filecache` join `*PREFIX*storages` on `storage` = `numeric_id` WHERE `path` LIKE 'files/%' GROUP BY storage";
+		$stmt = $this->db->prepare($sql);
+		if (!$stmt->execute()) {
+			\OCP\Util::writeLog("Files Quota","Fail during the execution : (" . $stmt->errorCode() . ") " . $stmt->errorInfo(), \OCP\Util::ERROR);
+			return null;
+		}
+		else
+		{
+			foreach ($stmt->fetchAll() as $line)
+			{
+				$row[] = $line;
+			}
+			$stmt->closeCursor();
+			return $row;
+		}		
+	}
+
+	public function updateNewDatas($data)
+	{
+
+		$sql = "SELECT * FROM `*PREFIX*files_quota`;";
+		$stmt = $this->db->prepare($sql);
+		if (!$stmt->execute()) {
+			\OCP\Util::writeLog("Files Quota","Fail during the execution : (" . $stmt->errorCode() . ") " . $stmt->errorInfo(), \OCP\Util::ERROR);
+			return null;
+		}
+		foreach ($stmt->fetchAll() as $line)
+		{
+			foreach ($data as $row)
+			{	
+				if ($row['id'] === $line['user'])
+				{
+					$row['quota'] = $line['quota_files'];
+				}
+			}
+		}
+		foreach ($data as $row)
+		{
+			$id = $row['id'];
+			$nb_files = $row['nb_files'];
+			$quota = $row['quota'];
+			$sql = "INSERT INTO `*PREFIX*files_quota` (user, user_files, quota_files) VALUES
+			('$id', '$nb_files', '$quota') ON DUPLICATE KEY UPDATE user_files = VALUES(`user_files`), quota_files = VALUES(`quota_files`)";
+			$stmt = $this->db->prepare($sql);
+			if (!$stmt->execute()) {
+				\OCP\Util::writeLog("Files Quota","Fail during the execution : (" . $stmt->errorCode() . ") " . $stmt->errorInfo(), \OCP\Util::ERROR);
+				return null;
+			}			
 		}
 		return 0;
 	}

@@ -41,6 +41,13 @@ console.log("files_quota");
 			}
 			$('.chosen-select').chosen();
 			$('#filesquota-user-block').show();
+			var quota = username.substr(username.indexOf("|")+1);
+			if (quota == "" || quota == "-2")
+			{
+				quota = $('#defaultfilesnumber').val();
+			}
+			$('#userquotafiles').val(parseInt(quota));
+
 		});
 
 		$('#submitNewUserQuota').click(function() {
@@ -75,6 +82,30 @@ console.log("files_quota");
 				},
 				true
 			);
+		})
+
+		$('#calculate').click(function() {
+			OCdialogs.confirm(
+				t('filesquota_recalculate', 'This process could take a lot of time, are you sure ?'),
+				t('filesquota_recalculate', 'Launch process ?'),
+				function ( confirmed )
+				{
+					if ( confirmed )
+					{
+						var url = OC.generateUrl('/apps/files_quota/calculateUsersFiles');
+						$.post(url).success(function (response) {
+							if (response.error == 0)
+							{
+								OCdialogs.info( response.message, t('Recalculating', 'The process successfully recalculate all the users files'), null, true );
+							}
+							else
+							{
+								OCdialogs.info( response.message, t('Recalculating', 'The process failed'), null, true );
+							}
+						})
+					}
+				}
+			)
 		})
 	});
 })(jQuery, OC);

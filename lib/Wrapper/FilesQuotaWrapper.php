@@ -10,10 +10,10 @@ use OC\Files\Storage\Wrapper\Wrapper;
 
 class FilesQuotaWrapper extends Wrapper{
 
-	private $default_size = 5368709120;
 
-	private $default_nb_files = 20000;
+	private $DEFAULT_QUOTA_FILES = -2;
 
+	private $UNLIMITED_QUOTA_FILES = -1;
 	/**
 	 * @var int $quota
 	 * quota size in GB
@@ -37,12 +37,15 @@ class FilesQuotaWrapper extends Wrapper{
 	 */
 	protected	$db;
 
+	private $logger;
+
 	private		$exist = true;
 
 	public function __construct($parameters) {
 		$this->storage = 	$parameters['storage'];
 		$this->quota = 		$parameters['quota'];
 		$this->db =			$parameters['db'];
+		$this->logger = $parameters['logger'];
 		$this->sizeRoot = 	isset($parameters['root']) ? $parameters['root'] : '';
 	}
 
@@ -103,49 +106,63 @@ class FilesQuotaWrapper extends Wrapper{
 	 * @return int
 	 */
 	public function free_space($path) {
-		if ($this->quota < 0) {
-		return $this->storage->free_space($path);
-		} else {
-			$used = $this->getSize($this->sizeRoot);
-			if ($used < 0) {
-			return \OCP\Files\FileInfo::SPACE_NOT_COMPUTED;
-			} else {
-				$free = $this->storage->free_space($path);
-				$quotaFree = max($this->quota - $used, 0);
-				// if free space is known
-				if ($free >= 0) {
-				$free = min($free, $quotaFree);
-				} else {
-				$free = $quotaFree;
+		$defaultquota = 0;
+		if ($this->quota != \OCP\Files\FileInfo::SPACE_UNLIMITED)
+		{
+			if ($this->quota < 0) {
+				return $this->storage->free_space($path);
+			} 
+			else {
+				$used = $this->getSize($this->sizeRoot);
+				if ($used < 0) {
+					return \OCP\Files\FileInfo::SPACE_NOT_COMPUTED;
+				} 
+				else {
+					$free = $this->storage->free_space($path);
+					$quotaFree = max($this->quota - $used, 0);
+					// if free space is known
+					if ($free >= 0) {
+						$free = min($free, $quotaFree);
+					} 
+					else {
+						$free = $quotaFree;
+					}
 				}
 			}
 		}
-
 		$user = $this->storage->getUser()->getUID();
 		//check first if the user exist in our DB
 		$path2 = Filesystem::normalizePath($this->storage->getLocalFile($path), true, true);
 		$data = $this->db->findUserData($user);
 		if (!isset($data['user']))
 		{
-		$this->exist = false;
+			$this->exist = false;
 			$nb_files = $this->db->getUploadedFilesNumber($user);
-			$data = ['user' => $user, 'nb_files' => $nb_files, 'quota_files' => $this->default_nb_files];
+			$data = ['user' => $user, 'nb_files' => $nb_files, 'quota_files' => $this->DEFAULT_QUOTA_FILES];
 		}
 		if (!$this->isPartFile($path)) {
 		$free = $this->check_free_space('');
-		if ($free >= 0 && $data['quota_files'] - $data['nb_files'] > 0) {
+		if ($data['quota_files'] == $this->DEFAULT_QUOTA_FILES)
+		{
+			$defaultquota = 1;
+			$data['quota_files'] = $this->db->getDefaultQuota();
+		}
+		if ($free >= 0 && ($data['quota_files'] - $data['nb_files'] > 0 || $data['quota_files'] == $this->UNLIMITED_QUOTA_FILES)) {
+			if ($defaultquota == 1)
+			{
+				$data['quota_files'] = $this->DEFAULT_QUOTA_FILES; 
+			}
 			// only apply quota for files, not metadata, trash or others
-				if (strpos(ltrim($path, '/'), 'files/') === 0) {
+			if (strpos(ltrim($path, '/'), 'files/') === 0) {
 				if ($this->exist == true)
 					{
-					$this->db->updateUserData(['username' => $user,
+						$this->db->updateUserData(['username' => $user,
 						'file_size' => $this->quota - ($free)]);
 					}
 					else
 					{
-					$this->db->addNewUserQuota(['username' => $user,
-						'nb_files' => $data['nb_files'] + 1,
-						'sum_files' => $this->quota - $free]);
+						$this->db->addNewUserQuota(['username' => $user,
+						'nb_files' => $data['nb_files'] + 1]);
 					}
 					return $free;
 				}

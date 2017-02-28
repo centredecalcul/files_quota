@@ -9,6 +9,6 @@ $application->registerRoutes($this, [
 	'routes' => [
 	['name' => 'settings#setDefaultQuota', 'url' => '/setDefaultQuota', 'verb' => 'POST'],
 	['name' => 'settings#setUserQuota', 'url' => '/setUserQuota', 'verb' => 'POST'],
+	['name' => 'settings#calculateUsersFiles', 'url' => '/calculateUsersFiles', 'verb' => 'POST'],
 	]
-
 ]);

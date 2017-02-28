@@ -31,10 +31,11 @@ class Application extends \OCP\AppFramework\App {
 		});
 
 		$container->registerService('FilesQuotaMapper', function($c) {
+			$server = $c->getServer();
 			return new \OCA\Files_Quota\Db\FilesQuotaMapper(
 				$c->query('ServerContainer')->getDb(),
-				$server->getConfig(),
-				$c->query('Logger')
+				$c->query('Logger'),
+				$server->getConfig()
 			);
 		});
 
@@ -75,15 +76,13 @@ class Application extends \OCP\AppFramework\App {
 					$user = $userSession->getUser()->getUID();
 					$db = $this->getContainer()->query('FilesQuotaMapper');
 					$quota = \OC_Util::getUserQuota($user);
-					if ($quota !== \OCP\Files\FileInfo::SPACE_UNLIMITED) {
-						return new FilesQuotaWrapper([
+					return new FilesQuotaWrapper([
 								'storage' => $storage,
 								'db' => $db,
 								'quota' => $quota,
 								'root' => 'files',
 								'logger' => $logger
-							]);
-						}
+						]);	
 				}
 				return $storage;
 			});

@@ -91,4 +91,22 @@ class	SettingsController extends Controller {
 		$return = $this->db->setUserQuota($quota, $username);
 		return new DataResponse(['error' => $return]);
 	}
+
+	public function calculateUsersFiles()
+	{
+		$result = null;
+		$this->log->error("TEST");
+
+		if ($result = $this->db->getAllUsersFiles())
+		{
+			foreach ($result as $line)
+			{
+				$row[] = ['id' => substr($line['id'], 6), 'nb_files' => $line['nb_files'], 'quota' => $this->db->DEFAULT_QUOTA_FILES];
+			}
+			$this->log->error($row[0]['id']);
+			$this->db->updateNewDatas($row);
+			return new DataResponse(['error' => 0]);
+		}
+		return new DataResponse(['error' => 1]);
+	}
 }

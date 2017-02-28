@@ -16,17 +16,22 @@
 		<input type="button" name="submitNewDefaultQuota" id="submitNewDefaultQuota"
 				   value="<?php p($l->t( 'Save' )); ?>"/>
 	</p>
+	<div id="FilesUserRecalculate">
+	<p>
+	<label for="calculate">Recalculate the file number for each user</label>
+	<input type="button" name="calculate" id="calculate" value="<?php p($l->t( 'Recalculate' )); ?>"/>
+	</p>
 	<p>Edit specific user quota</p>
 	</div>
     <select class="chosen-select" id="filesquota-user-select" width="200px" name="username" data-placeholder="Select username">
         <option value="0" selected=""></option>
         <?php foreach($_['userList'] as $row):?>
-        <option value="<?php p($row['uid']);?>">
+        <option value="<?php p($row['uid'] . '|' . $row['quota_files']);?>">
            	<?php p($row['uid']);?>
         </option>
         <?php endforeach;?>
     </select>
-    <div id="filesquota-user-block" style="display: none;">
+    <div id="filesquota-user-block" style="display: none;" >
     <label for="userquotafiles">New user quota</label>
     <input type="number" id="userquotafiles" name="userquota" width="40px" value=""/>
 	<input type="button" name="submitNewUserQuota" id="submitNewUserQuota"
